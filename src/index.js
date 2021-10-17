@@ -35,6 +35,7 @@ import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
       else{
         this.state.btnText='Start tracking';
         this.props.onTimerClick(this.state.input,this.state.time);
+        this.state.secondsElapsed=0;
         this.state.time={'h':0,'m':0,'s':0};
         clearInterval(this.interval);
       }
