@@ -1,119 +1,143 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
+import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
+
+
+
 //Componente controlado, pois o board terá controle total sobre eles
 //Basicamente só recebem valores da board e informam quando são clicados
 //Portanto é um componente funcional
-function Square (props) {
-      return (
-        <button className="square" 
-        onClick={props.onClick}>
-          {
-          props.value //Propriedade value passada pelo o Board
-          
-          }
-        </button>
-      );
-    
-  }
+
   
-  class Board extends React.Component {
-
-
-    renderSquare(i) {
-      return( <Square 
-      value={this.props.squares[i]}//Value é uma propriedade passada para o Square
-      onClick={()=>this.props.onClick(i)}//Para manter a privacidade do state do tabuleiro, essa função é chamada assim que o quadrado é clicado
-      />);
+  class Timer extends React.Component {
+    constructor(props){
+      super(props);
+      this.state={
+        input:'',
+        secondsElapsed:0,
+        time:{'h':0,'m':0,'s':0},
+        isStart:true,
+        btnText:'Start tracking',
+      }
+      this.handleChange = this.handleChange.bind(this);
+      this.handleClick = this.handleClick.bind(this);
+    };
+    handleChange(e) {
+      this.setState({ input: e.target.value });
+    };
+    handleClick(e){
+      //console.log(this.state.input);
+      if(this.state.isStart){
+      this.state.btnText='Stop tracking'
+      this.tick();
+      }
+      else{
+        this.state.btnText='Start tracking';
+        this.props.onTimerClick(this.state.input,this.state.time);
+        this.state.time={'h':0,'m':0,'s':0};
+        clearInterval(this.interval);
+      }
+      this.setState(prevState=>({
+        isStart:!prevState.isStart
+      }))
+      //this.props.onTimerClick(this.state.input)
     }
-  
-    render() {
+    //Atualiza o status seconds no intervalo estabelecido
+    tick(){
+      this.interval = setInterval(()=>{
+        this.setState(
+          prevState=>(
+            {
+              secondsElapsed:prevState.secondsElapsed +1
+            }
+          )
+        )
+        var timeElapsed = this.secondsForTime(this.state.secondsElapsed);
+        this.state.time=timeElapsed;
+        console.log(this.state.time);
+      },1000)
+    }
+    secondsForTime(secs){
+      let hours = Math.floor(secs/(60*60));
 
+      let divisor_for_minutes = secs % (60 * 60);
+      let minutes = Math.floor(divisor_for_minutes / 60);
   
+      let divisor_for_seconds = divisor_for_minutes % 60;
+      let seconds = Math.ceil(divisor_for_seconds);
+
+      let timeObj = {
+        "h":hours,
+        "m":minutes,
+        "s":seconds,
+      };
+      return timeObj
+    }
+    componentWillUnmount(){
+      clearInterval(this.interval);
+    }
+    render(){
       return (
-        <div>
-          <div className="board-row">
-            {this.renderSquare(0)}
-            {this.renderSquare(1)}
-            {this.renderSquare(2)}
-          </div>
-          <div className="board-row">
-            {this.renderSquare(3)}
-            {this.renderSquare(4)}
-            {this.renderSquare(5)}
-          </div>
-          <div className="board-row">
-            {this.renderSquare(6)}
-            {this.renderSquare(7)}
-            {this.renderSquare(8)}
-          </div>
+        <div className="row mt-3 mx-auto w-100">
+          <div className="col-7">
+      <input type="email" className="form-control form-control-sm" id="colFormLabelSm" placeholder="Insert a description of what you are tracking" onChange={this.handleChange}></input>
+            </div>
+            <div className="col-3">
+              <p>Time elapsed: {this.state.time.h} h {this.state.time.m} m {this.state.time.s} s</p>
+            </div>
+            <div className="col-2">
+            <button type="submit" className="btn btn-primary "  onClick={this.handleClick}>{this.state.btnText}</button>
+
+            </div>
         </div>
       );
     }
   }
   
-  class Game extends React.Component {
-    handleClick(i){
-        const history=this.state.history.slice(0,this.state.stepNumber+1);
-        const current = history[history.length-1];
-        const squares = current.squares;
-        if(calculateWinner(squares)|| squares[i]){
-            return;
-        }
-        squares[i]=this.state.xIsNext?'X': 'O';
-        this.setState({
-            history:history.concat([{squares:squares,}]),
-            xIsNext:!this.state.xIsNext,
-            stepNumber:history.length,
-        });
-    }
-    jumpTo(step) {
-        this.setState({
-          stepNumber: step,
-          xIsNext: (step % 2) === 0,
-        });
-      }
-      constructor(props){
+  class Times extends React.Component {
+
+    constructor(props){
           super(props);
           this.state={
-              history:[{squares:Array(9).fill(null)}],
-              xIsNext:true,
-              stepNumber:0,
+              timeHistory:[],
           }
-      };
+          this.getTimerData = this.getTimerData.bind(this);
+      }
+      getTimerData(text,time){
+        console.log(text);
+        console.log(time);
+        let timeObj = {
+          'Title':text,
+          'TimeElapsed':time,
+        }
+        this.setState(prevState=>({
+          timeHistory:prevState.timeHistory.concat(timeObj),
+      }));
+console.log(this.state.timeHistory);
+      }
     render() {
-        const history=this.state.history;
-        const current = history[this.state.stepNumber];
-        const winner = calculateWinner(current.squares);
-        const moves = history.map((step, move) => {
-            const desc = move ?
-              'Go to move #' + move :
-              'Go to game start';
-              return(
-                  <li key={move}>
-                      <button onClick={()=>this.jumpTo(move)}>{desc}</button>
-                  </li>
-              )
-        });
-        let status;
-        if(winner){
-            status= "Winner: "+ winner;
-        }
-        else{
-            status = 'Next player: '+(this.state.xIsNext?'X':'O');
-        }
+      const historyLog=this.state.timeHistory;
+      console.log(historyLog);
+      const history= historyLog.map((value,index)=>{
+        return(<li key={index} className="list-group-item">
+            <h4>{value.Title} <small>| Time elapsed: 
+               { value.TimeElapsed.h} h {value.TimeElapsed.m} m {value.TimeElapsed.s} s</small></h4>
+        </li>)
+              
+      })
       return (
-        <div className="game">
-          <div className="game-board">
-            <Board 
-            squares = {current.squares}
-            onClick={(i)=>this.handleClick(i)}
-            />
-          </div>
-          <div className="game-info">
-            <div>{status }</div>
-            <ol>{moves}</ol>
-          </div>
+        <div className="timeTracking">
+        <div className="timer">
+        <Timer
+        onTimerClick = {this.getTimerData}
+        />
+        </div>
+        <div className="timeLog">
+          <ul className='list-group'>
+          {history}
+          </ul>
+        </div>
         </div>
       );
     }
@@ -122,28 +146,11 @@ function Square (props) {
   // ========================================
   
   ReactDOM.render(
-    <Game />,
+    <Times />,
     document.getElementById('root')
   );
   
 
 
-  function calculateWinner(squares) {
-    const lines = [
-      [0, 1, 2],
-      [3, 4, 5],
-      [6, 7, 8],
-      [0, 3, 6],
-      [1, 4, 7],
-      [2, 5, 8],
-      [0, 4, 8],
-      [2, 4, 6],
-    ];
-    for (let i = 0; i < lines.length; i++) {
-      const [a, b, c] = lines[i];
-      if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-        return squares[a];
-      }
-    }
-    return null;
-  }
+ 
+  
